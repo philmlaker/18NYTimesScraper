@@ -45,35 +45,8 @@ app.get("/all", function(req, res) {
 
 
 
-app.post("/submit", function(req, res) {
-  
-  // When searching by an id, the id needs to be passed in
-  // as (mongojs.ObjectId(IDYOUWANTTOFIND))
 
-  // Update the note that matches the object id
-  db.saved.update({
-    "_id": mongojs.ObjectId(req.params.id)
-  }, {
-    // Set the title, note and modified parameters
-    // sent in the req's body.
-    $set: {
-      "title": req.body.title,
-      "modified": Date.now()
-    }
-  }, function(error, edited) {
-    // Log any errors from mongojs
-    if (error) {
-      console.log(error);
-      res.send(error);
-    }
-    // Otherwise, send the mongojs response to the browser
-    // This will fire off the success function of the ajax request
-    else {
-      console.log(edited);
-      res.send(edited);
-    }
-  });
-});
+
 
 // 3. At the "/name" path, display every entry in the nytimesData collection, sorted by name
 // app.get("/name", function(req, res) {
