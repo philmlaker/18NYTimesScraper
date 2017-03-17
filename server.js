@@ -7,7 +7,7 @@ var mongojs = require("mongojs");
 
 // Initialize Express
 var app = express();
-
+app.use(express.static("public"));
 // Database configuration
 // Save the URL of our database as well as the name of our collection
 var databaseUrl = "scraper";

@@ -13,6 +13,8 @@ var app = express();
 // Database configuration
 var databaseUrl = "scraper";
 var collections = ["scrapedData"];
+app.use(express.static("public"));
+
 
 var db = mongojs(databaseUrl, collections);
 db.on("error", function(error) {
