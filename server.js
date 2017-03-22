@@ -26,7 +26,7 @@ app.use(express.static("public"));
 
 
 // DATABASE CONFIG
-mongoose.connect("mongodb://heroku_3gl34djc:dat6i44gcce80l62kkt8gft1no@ds133450.mlab.com:33450/heroku_3gl34djc");
+mongoose.connect(process.env.MONGODB_URI||"mongodb://localhost/scraper");
 var db = mongoose.connection;
 db.on("error", function(error) {
     console.log("Mongoose Error: ", error);
