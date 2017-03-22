@@ -1,86 +1,104 @@
-/* MongoDB Zoo (18.2.3)
- * =================== */
-
-// Dependencies
+// DEPENDENCIES
 var express = require("express");
-var mongojs = require("mongojs");
+var bodyParser = require("body-parser");
+var logger = require("morgan");
+var mongoose = require("mongoose");
+var request = require("request");
+var cheerio = require("cheerio");
+var exphbs = require("express-handlebars");
+var Note = require("./models/Note.js");
+var Article = require("./models/Article.js");
+var port = process.env.PORT || 3000
 
-// Initialize Express
+mongoose.Promise = Promise;
+
+// INITIALIZE DEPENDENCIES
 var app = express();
+app.use(logger("dev"));
+app.use(bodyParser.urlencoded({
+    extended: false
+}));
+app.engine("handlebars", exphbs({ defaultLayout: "main" }));
+app.set("view engine", "handlebars");
+
+// USE STATIC DIRECTORY
 app.use(express.static("public"));
-// Database configuration
-// Save the URL of our database as well as the name of our collection
-var databaseUrl = "scraper";
-var collections = ["nytimesData"];
 
-// Use mongojs to hook the database to the db variable
-var db = mongojs(databaseUrl, collections);
 
-// This makes sure that any errors are logged if mongodb runs into an issue
+// DATABASE CONFIG
+mongoose.connect("mongodb://heroku_3gl34djc:dat6i44gcce80l62kkt8gft1no@ds133450.mlab.com:33450/heroku_3gl34djc");
+var db = mongoose.connection;
 db.on("error", function(error) {
-  console.log("Database Error:", error);
+    console.log("Mongoose Error: ", error);
+});
+db.once("open", function() {
+    console.log("Mongoose connection successful.");
 });
 
-
-// Routes
-// 1. At the root path, send a simple hello world message to the browser
-app.get("/", function(req, res) {
-  res.send("Hello world");
+//-ROUTES-
+// ROUTES: SCRAPE GOOGLE NEWS FOR BLOCKCHAIN VOTING ARTICLES
+app.get("/scrape", function(req, res) {
+    request("https://www.nytimes.com/section/science?action=click&pgtype=Homepage&region=TopBar&module=HPMiniNav&contentCollection=Science&WT.nav=page", function(error, response, html) {
+        var $ = cheerio.load(html);
+        $("a.story-link").each(function(i, element) {
+            var result = {};
+            result.title = $(this).find("h2.headline").text();
+            result.link = $(element).find("img").attr("src");
+            var entry = new Article(result);
+            entry.save(function(err, doc) {
+                if (err) {
+                    console.log(err);
+                }
+            });
+        });
+    });
+    res.render('scraper', { title: "REDDIT'S BITCOIN SUB" });
 });
 
-// 2. At the "/all" path, display every entry in the nytimesData collection
-app.get("/all", function(req, res) {
-  // Query: In our database, go to the nytimesData collection, then "find" everything
-  db.nytimesData.find({}, function(err, found) {
-    // Log any errors if the server encounters one
-    if (err) {
-      console.log(err);
-    }
-    // Otherwise, send the result of this query to the browser
-    else {
-      res.json(found);
-    }
-  });
+// ROUTES: GET ALL SCRAPED ARTICLES
+app.get("/articles", function(req, res) {
+    Article.find({}, function(error, doc) {
+        if (error) {
+            console.log(error);
+        } else {
+            res.json(doc);
+        }
+    });
 });
 
+// ROUTES: GET ARTICLE BY OBJECTID
+app.get("/articles/:id", function(req, res) {
+    Article.findOne({ "_id": req.params.id })
+        .populate("note")
+        .exec(function(error, doc) {
+            if (error) {
+                console.log(error);
+            } else {
+                res.json(doc);
+            }
+        });
+});
 
+// ROUTES: CREATE NEW NOTE OR REPLACE EXISTING NOTE
+app.post("/articles/:id", function(req, res) {
+    var newNote = new Note(req.body);
+    newNote.save(function(error, doc) {
+        if (error) {
+            console.log(error);
+        } else {
+            Article.findOneAndUpdate({ "_id": req.params.id }, { "note": doc._id })
+                .exec(function(err, doc) {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        res.send(doc);
+                    }
+                });
+        }
+    });
+});
 
-
-
-
-// 3. At the "/name" path, display every entry in the nytimesData collection, sorted by name
-// app.get("/name", function(req, res) {
-//   // Query: In our database, go to the nytimesData collection, then "find" everything,
-//   // but this time, sort it by name (1 means ascending order)
-//   db.nytimesData.find().sort({ name: 1 }, function(err, found) {
-//     // Log any errors if the server encounters one
-//     if (err) {
-//       console.log(err);
-//     }
-//     // Otherwise, send the result of this query to the browser
-//     else {
-//       res.json(found);
-//     }
-//   });
-// });
-
-// // 4. At the "/weight" path, display every entry in the nytimesData collection, sorted by weight
-// app.get("/weight", function(req, res) {
-//   // Query: In our database, go to the nytimesData collection, then "find" everything,
-//   // but this time, sort it by weight (-1 means descending order)
-//   db.nytimesData.find().sort({ weight: -1 }, function(err, found) {
-//     // Log any errors if the server encounters one
-//     if (err) {
-//       console.log(err);
-//     }
-//     // Otherwise, send the result of this query to the browser
-//     else {
-//       res.json(found);
-//     }
-//   });
-// });
-
-// Set the app to listen on port 3000
-app.listen(3000, function() {
-  console.log("App running on port 3000!");
+//START APP ON PORT 3000
+app.listen(port, function() {
+    console.log("App running on port 3000");
 });

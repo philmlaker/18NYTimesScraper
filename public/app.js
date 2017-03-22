@@ -1,53 +1,69 @@
-/* MongoDB Zoo Site (18.2.9)
- * Front-End
- * ========================= */
-
-// 1: On Load
-// ==========
-
-// The first thing this js file will do: ask the back end for a json with all animals
-$.getJSON("/all", function(data) {
-  // For each entry of that json...
-
-   
-     $("#results").empty();
-     $("#results").append("<tr><th>Save Article</th><th>Title</th><th>Image</th><th>Note</th</tr>");
-      for (var i = 0; i < 10; i++) {
-      // Append each of the animal's properties to the table
-      $("#results").append("<tr><td data_id=" + data[i].id + ">" + "<button>Save</button>" + "</td>" + "<td>" + data[i].title + "</td>" +
-                           "<td><img src='" + data[i].image + "'></td>" +
-      "<td>" + "<textarea id='note'></textarea><div id='buttons'><div id='actionbutton'><button id='makenew'>Submit</button></div>" + "</td></tr>");
-                     
-    } 
+// GRAB ARTICLES
+$.getJSON("/articles", function(data) {
+  for (var i = 0; i < data.length; i++) {
+    $("#articles").append("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />" + data[i].link + "</p>");
+  }
 });
 
-// "<td>" + "<textarea id='note'></textarea><div id='buttons'><div id='actionbutton'><button id='makenew'>Submit</button></div>" + "</td></tr>"
 
-$(document).on("click", "#makenew", function() {
-  // AJAX POST call to the submit route on the server
-  // This will take the data from the form and send it to the server
+// ON ARTICLE CLICK
+$(document).on("click", "p", function() {
+  $("#notes").empty();
+  var thisId = $(this).attr("data-id");
 
-  console.log("itworks");
-  var note = $("#note").val();
-  console.log(note);
-  var title = $(this).attr('data-id');
-  console.log(title);
+  // GET ARTICLE
   $.ajax({
-    type: "POST",
-    dataType: "json",
-    url: "/submit",
+    method: "GET",
+    url: "/articles/" + thisId
+  })
+    .done(function(data) {
+      console.log(data);
+      $("#notes").append("<h2>" + data.title + "</h2>");
+      $("#notes").append("<input id='titleinput' name='title' >");
+      $("#notes").append("<textarea id='bodyinput' name='body'></textarea>");
+      $("#notes").append("<button data-id='" + data._id + "' id='savenote'>Save Note</button>");
+      $("#notes").append("<button data-id='" + data._id + "' id='delnote'>Delete Note</button>");
+      if (data.note) {
+        $("#titleinput").val(data.note.title);
+        $("#bodyinput").val(data.note.body);
+      }
+    });
+});
+
+// SAVING NOTE
+$(document).on("click", "#savenote", function() {
+  var thisId = $(this).attr("data-id");
+  $.ajax({
+    method: "POST",
+    url: "/articles/" + thisId,
     data: {
-     title: $("#title").val(),
-      note: $("#note").val(),
-      created: Date.now()
+      title: $("#titleinput").val(),
+      body: $("#bodyinput").val()
     }
   })
-  // If that API call succeeds, add the title and a delete button for the note to the page
-  .done(function(data) {
-    // Add the title and delete button to the #results section
-console.log(sent);
-  
-  // );
+    .done(function(data) {
+      console.log(data);
+      $("#notes").empty();
+    });
+  $("#titleinput").val("");
+  $("#bodyinput").val("");
 });
 
+// DELETE NOTE
+$(document).on("click", "#delnote", function() {
+  var thisId = $(this).attr("data-id");
+  $.ajax({
+    method: "POST",
+    url: "/articles/" + thisId,
+    data: {
+      title: "",
+      body: ""
+    }
+  })
+    .done(function(data) {
+      console.log(data);
+      $("#notes").empty();
+    });
+  $("#titleinput").val("");
+  $("#bodyinput").val("");
 });
