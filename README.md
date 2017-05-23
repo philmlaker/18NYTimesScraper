@@ -11,7 +11,7 @@ In this assignment, I created a web app that lets users leave comments on the la
 
 See a quick 30 second working version here:
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=uRqk7hWnnO4
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=pEa0U0br_kA
 " target="_blank"><img src="http://img.youtube.com/vi/pEa0U0br_kA/0.jpg" 
 alt="WonderWall Game" width="540" height="480" border="10" /></a>
 
